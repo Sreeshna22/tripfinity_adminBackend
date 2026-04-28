@@ -1,139 +1,95 @@
+const Package = require("../models/Package");
+const fs = require("fs"); 
 
-
-
-const Package = require('../models/Package');
-
-
-exports.addPackage = async (req, res) => {
+const pkgCtrl = {
+  upsertPackage: async (req, res) => {
     try {
-        const files = req.files;
-        
-       
-        const itinerary = JSON.parse(req.body.itinerary || "[]");
-        const reviews = JSON.parse(req.body.reviews || "[]");
-        const highlights = JSON.parse(req.body.highlights || "[]");
-        const seasonalPricing = JSON.parse(req.body.seasonalPricing || "{}");
-
-        const heroImages = files['heroImages'] ? files['heroImages'].map(f => f.path) : [];
-        const imageGallery = files['imageGallery'] ? files['imageGallery'].map(f => f.path) : [];
-
-       
-        if (files['itineraryImages']) {
-            files['itineraryImages'].forEach((file, index) => {
-                if (itinerary[index]) itinerary[index].dayImage = file.path;
-            });
-        }
-
-        if (files['clientImage']) {
-            files['clientImage'].forEach((file, index) => {
-                if (reviews[index]) reviews[index].clientImage = file.path;
-            });
-        }
-
-        const newPackage = new Package({
-            ...req.body,
-            heroImages,
-            imageGallery,
-            itinerary,
-            reviews,
-            highlights,
-            seasonalPricing
-        });
-
-        await newPackage.save();
-        res.status(201).json({ message: "Package Published!", data: newPackage });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-
-
-exports.updatePackage = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const files = req.files;
-       
-        let updateData = { ...req.body };
-
-        const itinerary = req.body.itinerary ? JSON.parse(req.body.itinerary) : [];
-        const reviews = req.body.reviews ? JSON.parse(req.body.reviews) : [];
-        const highlights = req.body.highlights ? JSON.parse(req.body.highlights) : [];
-        const seasonalPricing = req.body.seasonalPricing ? JSON.parse(req.body.seasonalPricing) : {};
-
-       
-        if (files && files['heroImages']) {
-            updateData.heroImages = files['heroImages'].map(f => f.path);
-        }
-        
-        if (files && files['imageGallery']) {
-            updateData.imageGallery = files['imageGallery'].map(f => f.path);
-        }
-
-        
-        if (files && files['itineraryImages']) {
-            files['itineraryImages'].forEach((file, index) => {
-                if (itinerary[index]) {
-                    itinerary[index].dayImage = file.path;
-                }
-            });
-        }
-
-        if (files && files['clientImage']) {
-            files['clientImage'].forEach((file, index) => {
-                if (reviews[index]) {
-                    reviews[index].clientImage = file.path;
-                }
-            });
-        }
+      const { id } = req.params;
+      let data = { ...req.body };
 
       
-        updateData.itinerary = itinerary;
-        updateData.reviews = reviews;
-        updateData.highlights = highlights;
-        updateData.seasonalPricing = seasonalPricing;
+      if (data.itinerary && typeof data.itinerary === 'string') {
+        try {
+          data.itinerary = JSON.parse(data.itinerary);
+        } catch (e) {
+          return res.status(400).json({ msg: "itinerary must be a valid JSON array" });
+        }
+      }
+
+      
+      if (data.idealFor && typeof data.idealFor === 'string') {
+        try {
+          data.idealFor = JSON.parse(data.idealFor);
+        } catch (e) {
+          data.idealFor = data.idealFor.split(","); 
+        }
+      }
+
+      
+      if (req.file) {
+        data.image = req.file.path; 
+      }
+
+      if (id) {
+        
+        const updated = await Package.findByIdAndUpdate(id, data, { new: true });
+        if (!updated) return res.status(404).json({ msg: "Package not found" });
+        return res.json({ msg: "Updated successfully", updated });
+      }
+
+      
+      const newPkg = await Package.create(data);
+      res.json({ msg: "Created successfully", newPkg });
+
+    } catch (err) {
+      res.status(500).json({ msg: err.message });
+    }
+  },
+
+  getAdminPackages: async (req, res) => {
+    try {
+      const list = await Package.find()
+        .populate({ 
+          path: "destination", 
+          populate: { path: "place", select: "name" } 
+        })
+        .sort("-createdAt");
+      res.json(list);
+    } catch (err) { res.status(500).json({ msg: err.message }); }
+  },
+
+  getPublishedPackages: async (req, res) => {
+    try {
+      const list = await Package.find({ isPublished: true })
+        .populate("destination", "name")
+        .sort("-createdAt");
+      res.json(list);
+    } catch (err) { res.status(500).json({ msg: err.message }); }
+  },
+
+  getPackageById: async (req, res) => {
+    try {
+      const pkg = await Package.findById(req.params.id)
+        .populate({ path: "destination", populate: { path: "place", select: "name" } });
+      if (!pkg) return res.status(404).json({ msg: "Package not found" });
+      res.json(pkg);
+    } catch (err) { res.status(500).json({ msg: err.message }); }
+  },
+
+  deletePackage: async (req, res) => {
+    try {
+      const pkg = await Package.findById(req.params.id);
+      if (!pkg) return res.status(404).json({ msg: "Not found" });
 
      
-        const updated = await Package.findByIdAndUpdate(
-            id, 
-            { $set: updateData }, 
-            { returnDocument: 'after', runValidators: true }
-        );
+      if (pkg.image) {
+        fs.unlink(pkg.image, (err) => { if (err) console.log(err); });
+      }
 
-        if (!updated) return res.status(404).json({ message: "Package not found" });
-
-        res.status(200).json({ message: "Updated Successfully", data: updated });
-    } catch (error) {
-        console.error("Update Error:", error);
-        res.status(500).json({ message: error.message });
-    }
+      await Package.findByIdAndDelete(req.params.id);
+      res.json({ msg: "Deleted successfully" });
+    } catch (err) { res.status(500).json({ msg: err.message }); }
+  }
 };
 
-
-exports.getAdminPackages = async (req, res) => {
-    try {
-        const data = await Package.find().populate('destination').sort({ createdAt: -1 });
-        res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-exports.deletePackage = async (req, res) => {
-    try {
-        await Package.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: "Deleted" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-exports.getPublicPackages = async (req, res) => {
-    try {
-        const data = await Package.find({ status: 'Published' })
-            .populate('destination')
-            .sort({ createdAt: -1 });
-        res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+module.exports = pkgCtrl;

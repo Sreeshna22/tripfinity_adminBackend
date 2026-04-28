@@ -9,3 +9,7 @@ policyRouter.get("/get-all", policyCtrl.getPolicies);
 policyRouter.put("/update", authMiddleware, adminChecker, policyCtrl.updatePolicies);
 
 module.exports = policyRouter;
+
+
+
+

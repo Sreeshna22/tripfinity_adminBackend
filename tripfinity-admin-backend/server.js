@@ -43,9 +43,17 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api", require("./routes/settingRoutes"));
+app.use('/api', require("./routes/destinationRoutes"));
 app.use('/api/destinations', require("./routes/destinationRoutes"));
-app.use('/api/packages', require("./routes/packageRoutes"));
+// app.use('/api/packages', require("./routes/packageRoutes"));
+app.use("/api", require("./routes/packageRoutes"));
+
+app.use("/api", require("./routes/requestRoutes"));
+app.use("/api", require("./routes/testimonialRoutes"));
 app.use('/api/policy', require("./routes/policyRoutes"));
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

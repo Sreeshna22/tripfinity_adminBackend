@@ -9,6 +9,7 @@ const authCtrl = require("../controllers/AuthController");
 const { authMiddleware, adminChecker } = require("../middleware/tokenMiddlewares");
 
 
+
 authRouter.post("/admin-login", authCtrl.AdminLogin);
 authRouter.post("/forgot-pwd/send-otp", authCtrl.sendOTPForgotPwd);
 authRouter.post("/forgot-pwd/verify-otp", authCtrl.verifyOTPForgotPwd);

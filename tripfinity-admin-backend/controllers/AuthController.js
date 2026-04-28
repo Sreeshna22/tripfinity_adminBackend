@@ -4,6 +4,8 @@
 
 
 
+
+
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -19,11 +21,42 @@ const {
 const authCtrl = {};
 
 
+const validateEmail = (email) => {
+  return String(email)
+    .toLowerCase()
+    .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+};
+
 authCtrl.AdminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+   
+    if (!email && !password) {
+      return res.status(400).json({ msg: "Email and Password are required" });
+    }
+
+  
+    if (!email) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
+
+    
+    if (!password) {
+      return res.status(400).json({ msg: "Password is required" });
+    }
+
+    
+    if (!validateEmail(email)) {
+      return res.status(400).json({ msg: "Invalid email format" });
+    }
+
+  
+
     const user = await User.findOne({ email: email.toLowerCase(), role: "admin" });
-    if (!user) return res.status(401).json({ msg: "Invalid email or unauthorized" });
+    
+    
+    if (!user) return res.status(401).json({ msg: "Admin account not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ msg: "Wrong password" });
@@ -40,6 +73,7 @@ authCtrl.AdminLogin = async (req, res) => {
 
     return res.json({ accessToken, refreshToken, msg: "Login successful" });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ msg: "Server Error" });
   }
 };
@@ -128,3 +162,5 @@ authCtrl.getAdminProfile = async (req, res) => {
 
 
 module.exports = authCtrl;
+
+
