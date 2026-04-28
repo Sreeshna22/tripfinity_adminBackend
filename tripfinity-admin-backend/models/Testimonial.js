@@ -10,7 +10,7 @@ const testimonialSchema = new mongoose.Schema({
     required: true 
   },
   place: { type: String, required: true }, 
-  image: { type: String }, 
+  images: [{ type: String }], 
   isPublished: { type: Boolean, default: false }
 }, { timestamps: true });
 

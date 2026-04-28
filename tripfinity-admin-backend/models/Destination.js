@@ -10,7 +10,8 @@ const destinationSchema = new mongoose.Schema({
   idealFor: [String], 
   coverImage: String,
   galleryImages: [String],
-  isPublished: { type: Boolean, default: false }
+  isPublished: { type: Boolean, default: false },
+  isPopular: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Destination", destinationSchema);

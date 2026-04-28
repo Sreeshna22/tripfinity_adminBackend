@@ -7,8 +7,23 @@ router.get("/settings/:category", setCtrl.getByCategory);
 
 
 router.get("/admin/settings", authMiddleware, adminChecker, setCtrl.getAllSettingsAdmin);
-router.post("/settings", authMiddleware, adminChecker, setCtrl.upsertSetting);
-router.put("/settings/:id", authMiddleware, adminChecker, setCtrl.upsertSetting);
-router.delete("/settings/:id", authMiddleware, adminChecker, setCtrl.deleteSetting);
+
+router.post("/admin/settings", 
+  authMiddleware, 
+  adminChecker, 
+  setCtrl.upsertSetting
+);
+
+router.put("/admin/settings/:id", 
+  authMiddleware, 
+  adminChecker, 
+  setCtrl.upsertSetting
+);
+
+router.delete("/admin/settings/:id", 
+  authMiddleware, 
+  adminChecker, 
+  setCtrl.deleteSetting
+);
 
 module.exports = router;
