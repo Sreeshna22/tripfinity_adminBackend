@@ -33,20 +33,55 @@
 
 
 
+// const multer = require("multer");
+// const path = require("path");
+
+
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "uploads/"); 
+//   },
+//   filename: (req, file, cb) => {
+  
+//     cb(null, Date.now() + "-" + file.originalname);
+//   },
+// });
+
+
+// const fileFilter = (req, file, cb) => {
+//   if (file.mimetype.startsWith("image/")) {
+//     cb(null, true);
+//   } else {
+//     cb(new Error("Only images are allowed!"), false);
+//   }
+// };
+
+// const upload = multer({ 
+//   storage: storage, 
+//   fileFilter: fileFilter,
+//   limits: { fileSize: 1024 * 1024 * 5 } 
+// });
+
+// module.exports = upload;
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
+// ✅ Ensure uploads folder exists
+const uploadDir = path.join(__dirname, "../uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); 
+    cb(null, uploadDir); // ✅ use absolute path
   },
   filename: (req, file, cb) => {
-  
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
-
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/")) {
@@ -56,10 +91,10 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
-  storage: storage, 
-  fileFilter: fileFilter,
-  limits: { fileSize: 1024 * 1024 * 5 } 
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 1024 * 1024 * 5 }
 });
 
 module.exports = upload;
