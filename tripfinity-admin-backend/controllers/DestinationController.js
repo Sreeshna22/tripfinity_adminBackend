@@ -112,14 +112,15 @@ const destCtrl = {
     }
   },
 
-  getPublishedDestinations: async (req, res) => {
-    try {
-      const list = await Destination.find({ status: "Published" }).sort("-createdAt");
-      res.json(list);
-    } catch (err) {
-      res.status(500).json({ msg: err.message });
-    }
-  },
+ getPublishedDestinations: async (req, res) => {
+  try {
+  
+    const list = await Destination.find({ isPublished: true }).sort("-createdAt");
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+},
 
   deleteDestination: async (req, res) => {
     try {
