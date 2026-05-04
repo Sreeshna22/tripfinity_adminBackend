@@ -7,7 +7,7 @@ const destinationSchema = new mongoose.Schema({
   type: { type: mongoose.Schema.Types.ObjectId, ref: "Setting" },  
   shortDescription: String,
   longDescription: String,
-  idealFor: [String], 
+ idealFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "Setting" }],
   coverImage: String,
   galleryImages: [String],
   isPublished: { type: Boolean, default: false },

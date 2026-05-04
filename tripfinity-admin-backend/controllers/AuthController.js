@@ -6,11 +6,15 @@
 
 
 
+
+
+
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const OtpModel = require("../models/OtpModel");
 const sendEmail = require("../utils/sendEmail");
+const rateLimit = require("express-rate-limit"); 
 
 const { 
   generateAccessToken, 
@@ -21,63 +25,78 @@ const {
 const authCtrl = {};
 
 
+authCtrl.loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 5, 
+  message: { msg: "Too many login attempts. Please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, 
+});
+
 const validateEmail = (email) => {
   return String(email)
     .toLowerCase()
     .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+
+
+
+
 };
 
 authCtrl.AdminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-   
-    if (!email && !password) {
+    if (!email || !password) {
       return res.status(400).json({ msg: "Email and Password are required" });
     }
 
-  
-    if (!email) {
-      return res.status(400).json({ msg: "Email is required" });
-    }
-
-    
-    if (!password) {
-      return res.status(400).json({ msg: "Password is required" });
-    }
-
-    
     if (!validateEmail(email)) {
       return res.status(400).json({ msg: "Invalid email format" });
     }
 
-  
-
     const user = await User.findOne({ email: email.toLowerCase(), role: "admin" });
     
-    
-    if (!user) return res.status(401).json({ msg: "Admin account not found" });
+
+    if (!user) {
+        return res.status(401).json({ msg: "Invalid credentials" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ msg: "Wrong password" });
+    if (!isMatch) {
+        return res.status(401).json({ msg: "Invalid credentials" });
+    }
 
     const accessToken = generateAccessToken({ userId: user._id, role: user.role });
     const refreshToken = generateRefreshToken({ userId: user._id, role: user.role });
 
+
     res.cookie('admin_token', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: 'lax',
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production", 
+      sameSite: 'strict', 
       maxAge: 24 * 60 * 60 * 1000 
     });
 
-    return res.json({ accessToken, refreshToken, msg: "Login successful" });
+    return res.json({ 
+        accessToken, 
+        refreshToken, 
+        user: { id: user._id, role: user.role }, 
+        msg: "Login successful" 
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("Login Error:", err);
     return res.status(500).json({ msg: "Server Error" });
   }
 };
 
+
+authCtrl.Logout = async (req, res) => {
+    res.clearCookie('admin_token');
+    return res.json({ msg: "Logged out successfully" });
+};
 
 authCtrl.sendOTPForgotPwd = async (req, res) => {
   try {
@@ -96,7 +115,6 @@ authCtrl.sendOTPForgotPwd = async (req, res) => {
   }
 };
 
-
 authCtrl.verifyOTPForgotPwd = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -112,7 +130,6 @@ authCtrl.verifyOTPForgotPwd = async (req, res) => {
     res.status(500).json({ msg: "Error verifying OTP" });
   }
 };
-
 
 authCtrl.changePwd = async (req, res) => {
   const { password, confirmPassword } = req.body;
@@ -137,30 +154,14 @@ authCtrl.changePwd = async (req, res) => {
   }
 };
 
-
-
-
-
-
 authCtrl.getAdminProfile = async (req, res) => {
   try {
-   
     const user = await User.findById(req.user.userId).select("-password");
-    
-    if (!user) {
-        return res.status(404).json({ msg: "admin not found" });
-    }
-    
+    if (!user) return res.status(404).json({ msg: "Admin not found" });
     res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ msg: "server error" });
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
-
-
-
-
 module.exports = authCtrl;
-
-
