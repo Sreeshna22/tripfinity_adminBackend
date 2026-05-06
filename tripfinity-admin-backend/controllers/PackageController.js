@@ -7,11 +7,43 @@ const mongoose = require("mongoose");
 
 const pkgCtrl = {
 
+
+  
+
  upsertPackage: async (req, res) => {
     try {
       const { id } = req.params;
       const cleanId = id ? id.trim() : null; 
       let data = { ...req.body };
+
+
+      
+
+     
+      if (data.price === undefined || data.price === null || data.price === "") {
+        return res.status(400).json({ msg: "Price per Person is required." });
+      }
+
+     
+
+      const numericFields = ['days', 'maxPersons', 'price'];
+      for (let field of numericFields) {
+        if (data[field] !== undefined) {
+          const val = Number(data[field]);
+          if (isNaN(val) || val < 1) {
+            const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+            return res.status(400).json({ msg: `${fieldName} must be a valid positive number.` });
+          }
+        }
+      }
+
+  
+      if (data.rating !== undefined) {
+        const ratingNum = Number(data.rating);
+        if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+          return res.status(400).json({ msg: "Rating must be a number between 1 and 5." });
+        }
+      }
 
  
       if (data.itinerary) {
