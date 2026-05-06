@@ -73,11 +73,11 @@ authCtrl.AdminLogin = async (req, res) => {
 
 
     res.cookie('admin_token', accessToken, {
-      httpOnly: true, 
-      secure: process.env.NODE_ENV === "production", 
-      sameSite: 'strict', 
-      maxAge: 24 * 60 * 60 * 1000 
-    });
+  httpOnly: true, 
+  secure: process.env.NODE_ENV === "production", 
+  sameSite: 'strict', 
+  maxAge: 1 * 60 * 60 * 1000 
+});
 
     return res.json({ 
         accessToken, 
@@ -94,7 +94,7 @@ authCtrl.AdminLogin = async (req, res) => {
 
 
 authCtrl.Logout = async (req, res) => {
-    res.clearCookie('admin_token');
+    res.cookie('admin_token', '', { expires: new Date(0) }); 
     return res.json({ msg: "Logged out successfully" });
 };
 
