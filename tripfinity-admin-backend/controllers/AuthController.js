@@ -164,4 +164,17 @@ authCtrl.getAdminProfile = async (req, res) => {
   }
 };
 
+
+authCtrl.Register = async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+    const hashed = await bcrypt.hash(password, 10);
+    const newUser = new User({ email, password: hashed, role });
+    await newUser.save();
+    res.json({ msg: "Admin Created Successfully!" });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+};
+
 module.exports = authCtrl;
