@@ -17,7 +17,7 @@ authRouter.post(
     authCtrl.AdminLogin
 );
 
-authRouter.post("/register", authCtrl.Register);
+
 
 
 authRouter.post("/forgot-pwd/send-otp", authCtrl.sendOTPForgotPwd);
