@@ -23,7 +23,7 @@ authRouter.post(
 authRouter.post("/forgot-pwd/send-otp", authCtrl.sendOTPForgotPwd);
 authRouter.post("/forgot-pwd/verify-otp", authCtrl.verifyOTPForgotPwd);
 authRouter.post("/change-pwd", authCtrl.changePwd);
-
+authRouter.post("/register", authCtrl.Register);
 
 authRouter.post("/logout", authCtrl.Logout);
 
