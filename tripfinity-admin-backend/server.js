@@ -83,20 +83,14 @@ connectDB();
 const app = express();
 
 
-// const allowedOrigins = [
-//   process.env.CLIENT_URL_1, 
-//   process.env.CLIENT_URL_2, 
-//   'http://localhost:5173',  
-//   'http://localhost:3000'   
-// ];
-
 const allowedOrigins = [
   process.env.CLIENT_URL_1, 
   process.env.CLIENT_URL_2, 
   'http://localhost:5173',  
-  'http://localhost:3000',
-  'https://trifinity-admin-frontend.vercel.app' // Add this line!
+  'http://localhost:3000'   
 ];
+
+
 
 
 app.use(cors({
