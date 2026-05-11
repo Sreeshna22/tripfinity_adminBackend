@@ -73,11 +73,11 @@ authCtrl.AdminLogin = async (req, res) => {
 
 
     res.cookie('admin_token', accessToken, {
-  httpOnly: true, 
-  secure: process.env.NODE_ENV === "production", 
-  sameSite: 'strict', 
-  maxAge: 1 * 60 * 60 * 1000 
-});
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production", 
+      sameSite: 'strict', 
+      maxAge: 24 * 60 * 60 * 1000 
+    });
 
     return res.json({ 
         accessToken, 
@@ -94,7 +94,7 @@ authCtrl.AdminLogin = async (req, res) => {
 
 
 authCtrl.Logout = async (req, res) => {
-    res.cookie('admin_token', '', { expires: new Date(0) }); 
+    res.clearCookie('admin_token');
     return res.json({ msg: "Logged out successfully" });
 };
 
@@ -166,9 +166,17 @@ authCtrl.getAdminProfile = async (req, res) => {
 
 
 
-
-
-
-
+authCtrl.Register = async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+ 
+    const hashed = await bcrypt.hash(password, 10);
+    const newUser = new User({ email, password: hashed, role });
+    await newUser.save();
+    res.json({ msg: "Admin Created Successfully!" });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+};
 
 module.exports = authCtrl;
