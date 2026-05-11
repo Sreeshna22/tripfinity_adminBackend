@@ -2,6 +2,8 @@
 
 
 
+
+
 const Package = require("../models/Package");
 const Destination = require("../models/Destination");
 const fs = require("fs");
@@ -9,12 +11,10 @@ const mongoose = require("mongoose");
 
 const pkgCtrl = {};
 
-// helper: safely parse JSON or CSV string
+
 const parseMaybeJson = (value) => {
   if (value === undefined || value === null || value === "") return value;
-
   if (Array.isArray(value)) return value;
-
   if (typeof value === "string") {
     try {
       return JSON.parse(value);
@@ -22,25 +22,7 @@ const parseMaybeJson = (value) => {
       return value.split(",").map((item) => item.trim()).filter(Boolean);
     }
   }
-
   return value;
-};
-
-// helper: get uploaded file paths
-const getFilePaths = (files) => {
-  if (!files) return [];
-
-  // if multer uses upload.array("images")
-  if (Array.isArray(files)) {
-    return files.map((file) => file.path);
-  }
-
-  // if multer uses upload.fields({ images: [...] })
-  if (files.images && Array.isArray(files.images)) {
-    return files.images.map((file) => file.path);
-  }
-
-  return [];
 };
 
 pkgCtrl.upsertPackage = async (req, res) => {
@@ -48,6 +30,7 @@ pkgCtrl.upsertPackage = async (req, res) => {
     const { id } = req.params;
     const cleanId = id ? id.trim() : null;
     const data = { ...req.body };
+
 
     if (!data.title || !data.destination || !data.days || !data.price || !data.maxPersons) {
       return res.status(400).json({
@@ -59,7 +42,7 @@ pkgCtrl.upsertPackage = async (req, res) => {
       return res.status(400).json({ msg: "Invalid destination id." });
     }
 
-    const numericFields = ["days", "maxPersons", "price"];
+    const numericFields = ["maxPersons", "price"];
     for (const field of numericFields) {
       const val = Number(data[field]);
       if (isNaN(val) || val < 1) {
@@ -71,6 +54,10 @@ pkgCtrl.upsertPackage = async (req, res) => {
       data[field] = val;
     }
 
+  
+    data.days = String(data.days).trim();
+
+
     if (data.rating !== undefined && data.rating !== "") {
       const ratingNum = Number(data.rating);
       if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
@@ -81,6 +68,7 @@ pkgCtrl.upsertPackage = async (req, res) => {
       data.rating = ratingNum;
     }
 
+
     data.itinerary = parseMaybeJson(data.itinerary);
     data.idealFor = parseMaybeJson(data.idealFor);
 
@@ -89,7 +77,7 @@ pkgCtrl.upsertPackage = async (req, res) => {
     }
 
     if (data.idealFor && !Array.isArray(data.idealFor)) {
-      data.idealFor = [data.idealFor];
+      data.idealFor = data.idealFor ? [data.idealFor] : [];
     }
 
     if (Array.isArray(data.itinerary)) {
@@ -99,22 +87,18 @@ pkgCtrl.upsertPackage = async (req, res) => {
         afternoon: day.afternoon || "",
         evening: day.evening || "",
       }));
+    }
 
-      for (const day of data.itinerary) {
-        if (isNaN(day.dayNumber) || day.dayNumber < 1) {
-          return res.status(400).json({
-            msg: "Each itinerary item must have a valid dayNumber.",
-          });
-        }
+
+    let uploadedImages = [];
+    if (req.files) {
+      if (Array.isArray(req.files)) {
+        uploadedImages = req.files.map((file) => file.path);
+      } else if (req.files.images) {
+        uploadedImages = req.files.images.map((file) => file.path);
       }
     }
 
-    let uploadedImages = [];
-    if (req.files && req.files.length > 0) {
-      uploadedImages = req.files.map((file) => file.path);
-    }
-
-    // UPDATE
     if (cleanId && mongoose.Types.ObjectId.isValid(cleanId)) {
       const existingPackage = await Package.findById(cleanId);
       if (!existingPackage) {
@@ -130,25 +114,21 @@ pkgCtrl.upsertPackage = async (req, res) => {
         { $set: data },
         { new: true, runValidators: true }
       )
-        .populate("destination", "name -_id")
-        .populate("idealFor", "name -_id");
+        .populate("destination", "name")
+        .populate("idealFor", "name");
 
-      return res.json({
-        msg: "Package updated successfully",
-        updated,
-      });
+      return res.json({ msg: "Package updated successfully", updated });
     }
 
-    // CREATE
+
     if (uploadedImages.length > 0) {
       data.images = uploadedImages;
     }
 
     const newPkg = await Package.create(data);
-
     const populatedPkg = await Package.findById(newPkg._id)
-      .populate("destination", "name -_id")
-      .populate("idealFor", "name -_id");
+      .populate("destination", "name")
+      .populate("idealFor", "name");
 
     return res.status(201).json({
       msg: "Package created successfully",
@@ -163,45 +143,22 @@ pkgCtrl.upsertPackage = async (req, res) => {
 pkgCtrl.getPublishedPackages = async (req, res) => {
   try {
     let query = { isPublished: true };
-
-    if (req.query.destination) {
-      query.destination = req.query.destination;
-    }
-
-    if (req.query.idealFor) {
-      query.idealFor = { $in: [req.query.idealFor] };
-    }
-
-    if (req.query.minPrice || req.query.maxPrice) {
-      query.price = {};
-      if (req.query.minPrice) query.price.$gte = Number(req.query.minPrice);
-      if (req.query.maxPrice) query.price.$lte = Number(req.query.maxPrice);
-    }
-
-    if (req.query.minDays || req.query.maxDays) {
-      query.days = {};
-      if (req.query.minDays) query.days.$gte = Number(req.query.minDays);
-      if (req.query.maxDays) query.days.$lte = Number(req.query.maxDays);
-    }
-
     const list = await Package.find(query)
-      .populate("destination", "name -_id")
-      .populate("idealFor", "name -_id")
+      .populate("destination", "name")
+      .populate("idealFor", "name")
       .sort("-createdAt");
-
     res.json(list);
   } catch (err) {
-    res.status(500).json({ msg: "Filtering Error: " + err.message });
+    res.status(500).json({ msg: err.message });
   }
 };
 
 pkgCtrl.getAdminPackages = async (req, res) => {
   try {
     const list = await Package.find()
-      .populate("destination", "name -_id")
-      .populate("idealFor", "name -_id")
+      .populate("destination", "name")
+      .populate("idealFor", "name")
       .sort("-createdAt");
-
     res.json(list);
   } catch (err) {
     res.status(500).json({ msg: err.message });
@@ -211,17 +168,10 @@ pkgCtrl.getAdminPackages = async (req, res) => {
 pkgCtrl.getPackageById = async (req, res) => {
   try {
     const cleanId = req.params.id.trim();
-
-    if (!mongoose.Types.ObjectId.isValid(cleanId)) {
-      return res.status(400).json({ msg: "Invalid package id." });
-    }
-
     const pkg = await Package.findById(cleanId)
-      .populate("destination", "name -_id")
-      .populate("idealFor", "name -_id");
-
+      .populate("destination", "name")
+      .populate("idealFor", "name");
     if (!pkg) return res.status(404).json({ msg: "Package not found" });
-
     res.json(pkg);
   } catch (err) {
     res.status(500).json({ msg: err.message });
@@ -231,19 +181,12 @@ pkgCtrl.getPackageById = async (req, res) => {
 pkgCtrl.deletePackage = async (req, res) => {
   try {
     const cleanId = req.params.id.trim();
-
-    if (!mongoose.Types.ObjectId.isValid(cleanId)) {
-      return res.status(400).json({ msg: "Invalid package id." });
-    }
-
     const pkg = await Package.findById(cleanId);
     if (!pkg) return res.status(404).json({ msg: "Not found" });
 
-    if (pkg.images && pkg.images.length > 0) {
-      pkg.images.forEach((imgPath) => {
-        if (fs.existsSync(imgPath)) {
-          fs.unlinkSync(imgPath);
-        }
+    if (pkg.images) {
+      pkg.images.forEach((img) => {
+        if (fs.existsSync(img)) fs.unlinkSync(img);
       });
     }
 
