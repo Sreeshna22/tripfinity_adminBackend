@@ -40,7 +40,6 @@ authRouter.post("/change-pwd", authCtrl.changePwd);
 
 authRouter.post("/logout", authCtrl.Logout);
 
-// Add this to authRoutes.js
 authRouter.post("/register", authCtrl.Register);
 
 

@@ -1,7 +1,10 @@
+
+
 const mongoose = require("mongoose");
 
 const testimonialSchema = new mongoose.Schema({
   customerName: { type: String, required: true },
+  title: { type: String, required: true }, 
   rating: { type: Number, required: true, min: 1, max: 5 },
   description: { type: String, required: true },
   type: { 
@@ -9,7 +12,8 @@ const testimonialSchema = new mongoose.Schema({
     enum: ["Couple", "Family", "Friends"], 
     required: true 
   },
-  place: { type: String, required: true }, 
+
+  place: { type: mongoose.Schema.Types.ObjectId, ref: "Setting", required: true }, 
   images: [{ type: String }], 
   isPublished: { type: Boolean, default: false }
 }, { timestamps: true });
