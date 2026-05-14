@@ -106,11 +106,11 @@ const destCtrl = require("../controllers/DestinationController");
 const upload = require("../middleware/upload.js");
 const { authMiddleware, adminChecker } = require("../middleware/tokenMiddlewares");
 
-// PUBLIC ROUTES
+
 router.get("/destinations", destCtrl.getPublishedDestinations);
 router.get("/settings/:category", destCtrl.getSettingsByCategory);
 
-// ADMIN ROUTES
+
 router.get("/admin/destinations", authMiddleware, adminChecker, destCtrl.getAllDestinationsAdmin);
 router.post("/settings", authMiddleware, adminChecker, destCtrl.addSetting);
 

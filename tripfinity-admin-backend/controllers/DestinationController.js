@@ -403,16 +403,37 @@ const Destination = require("../models/Destination");
 const mongoose = require("mongoose");
 
 
+// const parseMultipleSelect = (value) => {
+//   if (!value || value === "undefined" || value === "") return [];
+//   if (Array.isArray(value)) return value;
+//   if (typeof value === "string") {
+
+//     return value.split(",").map(item => item.trim()).filter(Boolean);
+//   }
+//   return [value];
+// };
+
+
 const parseMultipleSelect = (value) => {
   if (!value || value === "undefined" || value === "") return [];
-  if (Array.isArray(value)) return value;
-  if (typeof value === "string") {
 
-    return value.split(",").map(item => item.trim()).filter(Boolean);
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+
+      if (Array.isArray(parsed)) return parsed;
+    } catch (err) {
+      return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
   }
+
   return [value];
 };
-
 const destCtrl = {
 
   getSettingsByCategory: async (req, res) => {
