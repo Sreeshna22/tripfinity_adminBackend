@@ -276,20 +276,42 @@ pkgCtrl.upsertPackage = async (req, res) => {
     }
 
 
-    const numericFields = ["maxPersons", "price", "days"];
+    // const numericFields = ["maxPersons", "price", "days"];
+    // for (const field of numericFields) {
+    //   let val = data[field];
+    //   if (val !== undefined && val !== "" && val !== "undefined") {
+    
+    //     if (field === "days" && typeof val === "string") {
+    //       val = val.replace(/\D/g, ''); 
+    //     }
+    //     const numericVal = Number(val);
+    //     if (isNaN(numericVal) || numericVal < 1) {
+    //       return res.status(400).json({ msg: `${field.charAt(0).toUpperCase() + field.slice(1)} must be a positive number.` });
+    //     }
+     
+    //     data[field] = field === "days" ? String(numericVal) : numericVal; 
+    //   }
+    // }
+
+    const numericFields = ["maxPersons", "price"]; // Removed 'days' from here
     for (const field of numericFields) {
       let val = data[field];
       if (val !== undefined && val !== "" && val !== "undefined") {
-    
-        if (field === "days" && typeof val === "string") {
-          val = val.replace(/\D/g, ''); 
-        }
         const numericVal = Number(val);
         if (isNaN(numericVal) || numericVal < 1) {
           return res.status(400).json({ msg: `${field.charAt(0).toUpperCase() + field.slice(1)} must be a positive number.` });
         }
-     
-        data[field] = field === "days" ? String(numericVal) : numericVal; 
+        data[field] = numericVal; 
+      }
+    }
+
+    // Handle 'days' separately as a String to allow "7 Night & 8 Days"
+    if (data.days) {
+      // We just trim it to clean extra spaces, but keep the text
+      data.days = String(data.days).trim();
+      
+      if (data.days === "" || data.days === "undefined") {
+        return res.status(400).json({ msg: "Days cannot be empty." });
       }
     }
 
