@@ -22,6 +22,7 @@ const packageSchema = new mongoose.Schema(
       required: true,
     },
    days: { type: String, required: true },
+    // days: { type: Number, required: true },
     price: { type: Number, required: true },
     maxPersons: { type: Number, required: true },
     rating: { type: Number, min: 1, max: 5, default: 5 },

@@ -38,12 +38,12 @@ const express = require("express");
 const router = express.Router();
 const testimonialCtrl = require("../controllers/TestimonialController");
 const { authMiddleware, adminChecker } = require("../middleware/tokenMiddlewares");
-const upload = require("../middleware/upload"); // Ensure this is your Cloudinary middleware
+const upload = require("../middleware/upload"); 
 
-// PUBLIC
+
 router.get("/testimonials", testimonialCtrl.getPublishedTestimonials);
 
-// ADMIN
+
 router.get("/admin/testimonials", authMiddleware, adminChecker, testimonialCtrl.getAdminTestimonials);
 
 router.post("/admin/testimonials", 
@@ -52,7 +52,7 @@ router.post("/admin/testimonials",
   testimonialCtrl.upsertTestimonial
 );
 
-// Note: ID is passed in params for PUT
+
 router.put("/admin/testimonials/:id", 
   authMiddleware, adminChecker, 
   upload.array('images', 5), 

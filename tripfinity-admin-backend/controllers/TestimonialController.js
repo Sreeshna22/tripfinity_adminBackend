@@ -94,41 +94,40 @@
 const Testimonial = require("../models/Testimonial");
 
 const testimonialCtrl = {
-  // Handles POST (Create) and PUT (Update)
+
   upsertTestimonial: async (req, res) => {
     try {
       const { id } = req.params;
       
-      // 1. Destructure text fields from req.body
+     
       const { customerName, title, rating, description, type, place, isPublished } = req.body;
 
-      // 2. Prepare data object with correct types
+    
       let data = {
         customerName,
         title, 
         rating: Number(rating),
         description,
         type,
-        place, // This is the ObjectId from Settings
+        place, 
         isPublished: isPublished === 'true' || isPublished === true
       };
 
-      // 3. Handle Cloudinary Images
-      // req.files.map(file => file.path) extracts the https:// URL from Cloudinary
+      
       if (req.files && req.files.length > 0) {
         const newImages = req.files.map(file => file.path);
         
         if (id) {
-          // If updating, get existing images and append new ones
+         
           const existing = await Testimonial.findById(id);
           data.images = [...(existing?.images || []), ...newImages];
         } else {
-          // If creating new
+    
           data.images = newImages;
         }
       }
 
-      // 4. Update existing testimonial
+  
       if (id) {
         const updated = await Testimonial.findByIdAndUpdate(
           id, 
@@ -140,11 +139,10 @@ const testimonialCtrl = {
         return res.json({ msg: "Testimonial updated successfully!", updated });
       }
 
-      // 5. Create new testimonial
       const newTestimonial = new Testimonial(data);
       await newTestimonial.save();
       
-      // Re-fetch to populate the Place name for the response
+     
       const result = await Testimonial.findById(newTestimonial._id).populate("place", "name");
       res.status(201).json({ msg: "Testimonial added successfully!", result });
       
@@ -153,7 +151,6 @@ const testimonialCtrl = {
     }
   },
 
-  // GET all for Admin
   getAdminTestimonials: async (req, res) => {
     try {
       const list = await Testimonial.find()
@@ -165,7 +162,7 @@ const testimonialCtrl = {
     }
   },
 
-  // GET published for Frontend
+
   getPublishedTestimonials: async (req, res) => {
     try {
       const list = await Testimonial.find({ isPublished: true })
@@ -177,7 +174,7 @@ const testimonialCtrl = {
     }
   },
 
-  // DELETE
+
   deleteTestimonial: async (req, res) => {
     try {
       const testimonial = await Testimonial.findById(req.params.id);
